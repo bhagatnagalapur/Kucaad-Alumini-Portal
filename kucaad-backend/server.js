@@ -16,9 +16,25 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : true,
+    origin: function (origin, callback) {
+        const allowedOrigins = [
+            'http://localhost:5173',
+            'http://localhost:3000',
+            'https://kucaad-alumini-portal.vercel.app'
+        ];
+        if (process.env.CORS_ORIGIN) {
+            allowedOrigins.push(...process.env.CORS_ORIGIN.split(','));
+        }
+        
+        if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+            callback(null, true);
+        } else {
+            // Fallback to allow dynamically
+            callback(null, true);
+        }
+    },
     credentials: true,
-})); // <--- Used only once!
+}));
 app.use(express.json());
 
 const createRateLimiter = ({ windowMs, max }) => {

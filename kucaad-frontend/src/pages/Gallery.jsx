@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { apiUrl } from '../lib/api';
 
-const GALLERY_API = apiUrl('/api/gallery');
-
 export default function Gallery() {
   const [galleryItems, setGalleryItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,7 +78,7 @@ export default function Gallery() {
     try {
       const imageData = await fileToDataUrl(formData.file);
       const token = localStorage.getItem('token');
-      const response = await fetch(GALLERY_API, {
+      const response = await fetch(apiUrl('/api/gallery'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

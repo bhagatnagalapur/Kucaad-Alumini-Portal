@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { apiUrl } from '../lib/api';
 import { 
   Users, 
   Briefcase, 
@@ -8,8 +8,6 @@ import {
   XCircle, 
   Clock, 
   AlertCircle,
-  Search,
-  Filter
 } from 'lucide-react';
 
 const AdminDashboard = () => {
@@ -21,10 +19,9 @@ const AdminDashboard = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
-  const API_URL = import.meta.env.VITE_API_URL;
-
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchData = async () => {
@@ -35,17 +32,20 @@ const AdminDashboard = () => {
 
     try {
       if (activeTab === 'users') {
-        const res = await axios.get(`${API_URL}/admin/pending`, { headers });
-        setPendingUsers(res.data);
+        const res = await fetch(apiUrl('/api/admin/pending'), { headers });
+        if (!res.ok) throw new Error(await res.text());
+        setPendingUsers(await res.json());
       } else if (activeTab === 'jobs') {
-        const res = await axios.get(`${API_URL}/admin/jobs/pending`, { headers });
-        setPendingJobs(res.data);
+        const res = await fetch(apiUrl('/api/admin/jobs/pending'), { headers });
+        if (!res.ok) throw new Error(await res.text());
+        setPendingJobs(await res.json());
       } else if (activeTab === 'events') {
-        const res = await axios.get(`${API_URL}/admin/events/pending`, { headers });
-        setPendingEvents(res.data);
+        const res = await fetch(apiUrl('/api/admin/events/pending'), { headers });
+        if (!res.ok) throw new Error(await res.text());
+        setPendingEvents(await res.json());
       }
     } catch (err) {
-      setError('Failed to fetch pending approvals. ' + (err.response?.data?.message || ''));
+      setError('Failed to fetch pending approvals. ' + (err.message || ''));
     } finally {
       setLoading(false);
     }
@@ -53,21 +53,28 @@ const AdminDashboard = () => {
 
   const handleAction = async (type, id, action) => {
     const token = localStorage.getItem('token');
-    const headers = { Authorization: `Bearer ${token}` };
     const status = action === 'approve' ? 'approved' : 'rejected';
 
     try {
       let endpoint = '';
-      if (type === 'user') endpoint = `${API_URL}/admin/update-status/${id}`;
-      else if (type === 'job') endpoint = `${API_URL}/admin/jobs/${id}`;
-      else if (type === 'event') endpoint = `${API_URL}/admin/events/${id}`;
+      if (type === 'user') endpoint = apiUrl(`/api/admin/update-status/${id}`);
+      else if (type === 'job') endpoint = apiUrl(`/api/admin/jobs/${id}`);
+      else if (type === 'event') endpoint = apiUrl(`/api/admin/events/${id}`);
 
-      await axios.put(endpoint, { status }, { headers });
+      const res = await fetch(endpoint, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) throw new Error(await res.text());
       setMessage(`${type.charAt(0).toUpperCase() + type.slice(1)} ${status} successfully!`);
       setTimeout(() => setMessage(''), 3000);
       fetchData();
     } catch (err) {
-      setError(`Failed to ${action} ${type}.`);
+      setError(`Failed to ${action} ${type}. ${err.message}`);
     }
   };
 
